@@ -10,6 +10,7 @@ export default function NewPatientPage() {
   const router = useRouter();
   const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [form, setForm] = useState<CreatePatientRequest>({
+    tenantId: "",
     firstName: "",
     lastName: "",
     phoneNumber: "",
@@ -86,6 +87,26 @@ export default function NewPatientPage() {
       )}
 
       <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: "1rem" }}>
+          <label htmlFor="tenantId" style={labelStyle}>
+            Tenant ID *
+          </label>
+          <input
+            id="tenantId"
+            type="text"
+            value={form.tenantId}
+            onChange={(e) => setForm({ ...form, tenantId: e.target.value })}
+            style={inputStyle}
+            placeholder="e.g. a0000000-0000-0000-0000-000000000001"
+            required
+          />
+          {fieldErrors.tenantId?.map((msg, i) => (
+            <small key={i} style={{ color: "red" }}>
+              {msg}
+            </small>
+          ))}
+        </div>
+
         <div style={{ marginBottom: "1rem" }}>
           <label htmlFor="firstName" style={labelStyle}>
             First Name *

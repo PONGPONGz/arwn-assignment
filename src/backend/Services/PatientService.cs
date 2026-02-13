@@ -10,16 +10,13 @@ namespace ClinicPos.Api.Services;
 public class PatientService : IPatientService
 {
     private readonly ClinicPosDbContext _db;
-    private readonly ITenantProvider _tenantProvider;
     private readonly IValidator<CreatePatientRequest> _validator;
 
     public PatientService(
         ClinicPosDbContext db,
-        ITenantProvider tenantProvider,
         IValidator<CreatePatientRequest> validator)
     {
         _db = db;
-        _tenantProvider = tenantProvider;
         _validator = validator;
     }
 
@@ -42,7 +39,7 @@ public class PatientService : IPatientService
 
         var patient = new Patient
         {
-            TenantId = _tenantProvider.TenantId,
+            TenantId = request.TenantId,
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             PhoneNumber = request.PhoneNumber.Trim(),
@@ -67,6 +64,7 @@ public class PatientService : IPatientService
         return new PatientResponse
         {
             Id = patient.Id,
+            TenantId = patient.TenantId,
             FirstName = patient.FirstName,
             LastName = patient.LastName,
             PhoneNumber = patient.PhoneNumber,
@@ -92,6 +90,7 @@ public class PatientService : IPatientService
             .Select(p => new PatientResponse
             {
                 Id = p.Id,
+                TenantId = p.TenantId,
                 FirstName = p.FirstName,
                 LastName = p.LastName,
                 PhoneNumber = p.PhoneNumber,

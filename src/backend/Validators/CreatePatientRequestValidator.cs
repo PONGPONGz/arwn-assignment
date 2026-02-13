@@ -6,6 +6,9 @@ public class CreatePatientRequestValidator : AbstractValidator<Dtos.CreatePatien
 {
     public CreatePatientRequestValidator()
     {
+        RuleFor(x => x.TenantId)
+            .NotEmpty().WithMessage("Tenant ID is required");
+
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required")
             .MaximumLength(100).WithMessage("First name must not exceed 100 characters");

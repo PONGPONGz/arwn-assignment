@@ -14,22 +14,20 @@ public class DuplicatePhoneTests : IClassFixture<TestWebApplicationFactory>
     public DuplicatePhoneTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
+        _factory.SeedTestData();
     }
 
     [Fact]
     public async Task Given_PatientExists_When_SamePhoneSameTenant_Then_Returns409()
     {
-        // Arrange
-        var tenantId = Guid.NewGuid();
-        var client = _factory.CreateClient();
+        var client = _factory.CreateAuthenticatedClient(TestWebApplicationFactory.AdminToken);
 
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ClinicPosDbContext>();
-            db.Tenants.Add(new Tenant { Id = tenantId, Name = "Test Tenant", CreatedAt = DateTime.UtcNow });
             db.Patients.Add(new Patient
             {
-                TenantId = tenantId,
+                TenantId = TestWebApplicationFactory.TenantAId,
                 FirstName = "Jane",
                 LastName = "Doe",
                 PhoneNumber = "0812345678",
@@ -39,19 +37,14 @@ public class DuplicatePhoneTests : IClassFixture<TestWebApplicationFactory>
             await db.SaveChangesAsync();
         }
 
-        // Act — create another patient with the same phone in the same tenant
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/patients");
-        request.Headers.Add("X-Tenant-Id", tenantId.ToString());
-        request.Content = JsonContent.Create(new
+        var response = await client.PostAsJsonAsync("/api/v1/patients", new
         {
+            tenantId = TestWebApplicationFactory.TenantAId,
             firstName = "John",
             lastName = "Smith",
             phoneNumber = "0812345678"
         });
 
-        var response = await client.SendAsync(request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("DUPLICATE_PHONE");
@@ -60,19 +53,12 @@ public class DuplicatePhoneTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Given_PatientExists_When_SamePhoneDifferentTenant_Then_Returns201()
     {
-        // Arrange
-        var tenantA = Guid.NewGuid();
-        var tenantB = Guid.NewGuid();
-        var client = _factory.CreateClient();
-
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ClinicPosDbContext>();
-            db.Tenants.Add(new Tenant { Id = tenantA, Name = "Tenant A", CreatedAt = DateTime.UtcNow });
-            db.Tenants.Add(new Tenant { Id = tenantB, Name = "Tenant B", CreatedAt = DateTime.UtcNow });
             db.Patients.Add(new Patient
             {
-                TenantId = tenantA,
+                TenantId = TestWebApplicationFactory.TenantAId,
                 FirstName = "Jane",
                 LastName = "Doe",
                 PhoneNumber = "0899999999",
@@ -82,19 +68,16 @@ public class DuplicatePhoneTests : IClassFixture<TestWebApplicationFactory>
             await db.SaveChangesAsync();
         }
 
-        // Act — create patient with same phone in different tenant
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/patients");
-        request.Headers.Add("X-Tenant-Id", tenantB.ToString());
-        request.Content = JsonContent.Create(new
+        var client = _factory.CreateAuthenticatedClient(TestWebApplicationFactory.TenantBAdminToken);
+
+        var response = await client.PostAsJsonAsync("/api/v1/patients", new
         {
+            tenantId = TestWebApplicationFactory.TenantBId,
             firstName = "Bob",
             lastName = "Jones",
             phoneNumber = "0899999999"
         });
 
-        var response = await client.SendAsync(request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 }

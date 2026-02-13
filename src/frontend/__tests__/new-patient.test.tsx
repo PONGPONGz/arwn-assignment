@@ -32,6 +32,7 @@ describe("Create Patient Page", () => {
       render(<NewPatientPage />);
     });
     expect(screen.getByText("New Patient")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tenant ID *")).toBeInTheDocument();
     expect(screen.getByLabelText("First Name *")).toBeInTheDocument();
     expect(screen.getByLabelText("Last Name *")).toBeInTheDocument();
     expect(screen.getByLabelText("Phone Number *")).toBeInTheDocument();
