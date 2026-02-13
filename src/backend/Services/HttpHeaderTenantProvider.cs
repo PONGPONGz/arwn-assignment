@@ -2,23 +2,25 @@ namespace ClinicPos.Api.Services;
 
 public class HttpHeaderTenantProvider : ITenantProvider
 {
-    private readonly Guid _tenantId;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public HttpHeaderTenantProvider(IHttpContextAccessor httpContextAccessor)
     {
-        var httpContext = httpContextAccessor.HttpContext;
-        if (httpContext is null)
-        {
-            _tenantId = Guid.Empty;
-            return;
-        }
-
-        var tenantHeader = httpContext.Items["TenantId"] as string;
-        if (tenantHeader is not null && Guid.TryParse(tenantHeader, out var tenantId))
-        {
-            _tenantId = tenantId;
-        }
+        _httpContextAccessor = httpContextAccessor;
     }
 
-    public Guid TenantId => _tenantId;
+    public Guid TenantId
+    {
+        get
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext is null) return Guid.Empty;
+
+            var tenantValue = httpContext.Items["TenantId"] as string;
+            if (tenantValue is not null && Guid.TryParse(tenantValue, out var tenantId))
+                return tenantId;
+
+            return Guid.Empty;
+        }
+    }
 }

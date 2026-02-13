@@ -5,7 +5,6 @@ namespace ClinicPos.Api.Middleware;
 public class TenantResolutionMiddleware
 {
     private readonly RequestDelegate _next;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public TenantResolutionMiddleware(RequestDelegate next)
     {
@@ -21,19 +20,16 @@ public class TenantResolutionMiddleware
             return;
         }
 
-        var tenantHeader = context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
-
-        if (string.IsNullOrWhiteSpace(tenantHeader) || !Guid.TryParse(tenantHeader, out _))
+        // Tenant is now resolved from authenticated user's claims
+        var user = context.User;
+        if (user.Identity?.IsAuthenticated == true)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.ContentType = "application/json";
-            var error = new { error = new { code = "MISSING_TENANT", message = "X-Tenant-Id header is required and must be a valid GUID" } };
-            await context.Response.WriteAsync(JsonSerializer.Serialize(error, JsonOptions));
-            return;
+            var tenantClaim = user.FindFirst("tenant_id")?.Value;
+            if (!string.IsNullOrEmpty(tenantClaim))
+            {
+                context.Items["TenantId"] = tenantClaim;
+            }
         }
-
-        // Store parsed tenant ID for the provider to read
-        context.Items["TenantId"] = tenantHeader;
 
         await _next(context);
     }

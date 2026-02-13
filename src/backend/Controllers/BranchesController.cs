@@ -1,5 +1,6 @@
 using ClinicPos.Api.Data;
 using ClinicPos.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace ClinicPos.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/branches")]
+[Authorize]
 public class BranchesController : ControllerBase
 {
     private readonly ClinicPosDbContext _db;

@@ -1,5 +1,6 @@
 using ClinicPos.Api.Dtos;
 using ClinicPos.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClinicPos.Api.Controllers;
@@ -16,6 +17,7 @@ public class PatientsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "CanCreatePatients")]
     public async Task<IActionResult> Create([FromBody] CreatePatientRequest request)
     {
         var patient = await _patientService.CreateAsync(request);
@@ -23,6 +25,7 @@ public class PatientsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = "CanViewPatients")]
     public async Task<IActionResult> List([FromQuery] Guid? branchId)
     {
         var patients = await _patientService.ListAsync(branchId);

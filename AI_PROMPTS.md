@@ -137,3 +137,109 @@ This document records the exact prompts used during the development of the Clini
 - Verification: `docker compose up --build` starts all services, API endpoints verified (branches, create patient, list patients, tenant isolation, duplicate phone 409)
 
 **Result:** Plan 001 marked as Done. All deliverables and tests complete.
+
+---
+
+## Iteration 6 — Authorization & User Management Planning (Section B)
+
+**Date:** 2026-02-13
+
+**Prompt:**
+
+> Section B — Authorization & user management
+> (mandatory)
+> B1. Roles
+> Implement role-based permissions: - Admin - User - Viewer
+> B2. Permissions (minimum)
+> Define and enforce permissions for: - Creating patients - Viewing patients - Creating
+> appointments (even if you don't implement appointments)
+> B3. User management (minimal scope)
+> Implement API endpoints: - Create User - Assign Role - Associate User with Tenant and one
+> or more Branches
+> Required enforcement
+> • Requests must include an authenticated identity (choose JWT, cookie session, or
+> simple token)
+> • Authorization must be enforced server-side (policy/attribute/middleware)
+> • Viewer cannot create patients
+> Stubbing auth is acceptable if permissions are still enforced reliably.
+> B4. Seeder (required)
+> Remove current auto seeder.
+> Provide a seeder that creates: - 1 Tenant - 2 Branches - Users for each role (Admin, User,
+> Viewer) - Correct tenant/branch associations
+> Seeder must be runnable via one command.
+>
+> Record the plan into a file #file:plans
+
+**Decisions made:**
+- Auth mechanism: **Stub API token** (not full JWT) — simple bearer token per user, permissions enforced via ASP.NET Core authorization policies. Easy to upgrade to JWT later.
+- Roles: **Admin, User, Viewer** (following assignment requirements, overriding PLAN.md's "Admin, Staff")
+- Tenant resolution: From **authenticated user's record** via auth handler, eliminating the `X-Tenant-Id` header
+- Seeder command: **`dotnet run -- --seed`** CLI flag (not auto-startup, not separate project)
+- User-Branch relationship: **Many-to-many** via `UserBranch` join table
+- User management access: **Admin-only** endpoints
+- Scope: **Backend only** — frontend login/token handling deferred to future iteration
+- Permissions defined: `CanCreatePatients` (Admin/User), `CanViewPatients` (Admin/User/Viewer), `CanCreateAppointments` (Admin/User)
+
+**Plan created:** `plans/002-auth-user-management.md`
+
+---
+
+## Iteration 7 — Make Patient TenantId Specifiable
+
+**Date:** 2026-02-13
+
+**Prompt:**
+
+> Follow up on thin slice implementation, tenantid of patient must be specifiable.
+
+**Changes made:**
+- Added `TenantId` (Guid) to `CreatePatientRequest` DTO
+- Added `TenantId` to `PatientResponse` DTO
+- Updated `PatientService.CreateAsync` to use `request.TenantId` instead of `_tenantProvider.TenantId`
+- Removed unused `ITenantProvider` dependency from `PatientService`
+- Added `TenantId` validation rule (`NotEmpty`) in `CreatePatientRequestValidator`
+- Updated frontend `CreatePatientRequest` and `PatientResponse` types to include `tenantId`
+- Added Tenant ID input field to the new patient form
+- Updated backend tests (`DuplicatePhoneTests`, `ValidationTests`) to include `tenantId` in request payloads
+- Updated frontend test (`new-patient.test.tsx`) to assert Tenant ID field is rendered
+
+---
+
+## Iteration 8 — Appointment + RabbitMQ Messaging Implementation (Section C)
+
+**Date:** 2026-02-13
+
+**Prompt:**
+
+> Plan #file:003-appointment-messaging.md is ready for implementation, proceed.
+
+**Work performed:**
+- Implemented Plan 003: Appointment + RabbitMQ Messaging (C1, C2, C3)
+
+---
+
+## Iteration 9 — Caching & Data Access Planning (Section D)
+
+**Date:** 2026-02-13
+
+**Prompt:**
+
+> Section D — Caching & data access (choose any two sections total)
+> D1. Cache at least one read path
+> Cache List Patients (or another meaningful GET).
+> D2. Cache key strategy for tenant isolation
+> Keys must be tenant-scoped (e.g., tenant:{tenantId}:patients:list:{branchId|all})
+> D3. Invalidation
+> On Create Patient and Create Appointment (being implemented): - Invalidate relevant cache keys - Or use versioned keys with tenant-scoped version bump
+
+**Decisions made:**
+- Cache library: `StackExchange.Redis` directly (not `IDistributedCache`) — need `SCAN` for pattern-based key invalidation
+- Cache key format: `tenant:{tenantId}:patients:list:{branchId|all}` — hierarchical, tenant-scoped
+- Invalidation strategy: Direct key deletion via `SCAN` + `DEL` on pattern `tenant:{tenantId}:patients:*` (simpler than versioned keys)
+- Both Create Patient and Create Appointment invalidate patient cache
+- TTL: 5 minutes (300 seconds) safety net
+- Serialization: `System.Text.Json` (already in project)
+- Cache layer: `ICacheService` abstraction for testability
+- Tests: Mock `ICacheService` — no Redis dependency in unit tests
+
+**Plan created:** `plans/004-caching-data-access.md`

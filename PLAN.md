@@ -21,7 +21,9 @@ See [`plans/README.md`](plans/README.md) for naming conventions, lifecycle, and 
 | # | Plan File | Feature | Status |
 |---|-----------|---------|--------|
 | 001 | [`001-patient-thin-slice.md`](plans/001-patient-thin-slice.md) | Patient Thin Slice (Create + List, infrastructure bootstrap) | Done |
-
+| 002 | [`002-auth-user-management.md`](plans/002-auth-user-management.md) | Authorization & User Management | Done |
+| 003 | [`003-appointment-messaging.md`](plans/003-appointment-messaging.md) | Appointment + RabbitMQ Messaging (C1, C2, C3) | Done |
+| 004 | [`004-caching-data-access.md`](plans/004-caching-data-access.md) | Caching & Data Access (D1, D2, D3) | Draft |
 _Plans will be added here as features are requested and planned._
 
 ---

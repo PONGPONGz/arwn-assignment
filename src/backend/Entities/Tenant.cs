@@ -8,4 +8,5 @@ public class Tenant
 
     public ICollection<Branch> Branches { get; set; } = [];
     public ICollection<Patient> Patients { get; set; } = [];
+    public ICollection<User> Users { get; set; } = [];
 }

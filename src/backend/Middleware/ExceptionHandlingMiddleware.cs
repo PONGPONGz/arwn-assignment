@@ -30,11 +30,15 @@ public class ExceptionHandlingMiddleware
         }
         catch (DuplicatePhoneException)
         {
-            await HandleDuplicateKeyException(context);
+            await HandleDuplicatePhoneException(context);
+        }
+        catch (DuplicateBookingException)
+        {
+            await HandleDuplicateBookingException(context);
         }
         catch (DbUpdateException ex) when (IsDuplicateKeyException(ex))
         {
-            await HandleDuplicateKeyException(context);
+            await HandleDuplicatePhoneException(context);
         }
         catch (Exception ex)
         {
@@ -68,7 +72,7 @@ public class ExceptionHandlingMiddleware
         await context.Response.WriteAsync(JsonSerializer.Serialize(error, JsonOptions));
     }
 
-    private static async Task HandleDuplicateKeyException(HttpContext context)
+    private static async Task HandleDuplicatePhoneException(HttpContext context)
     {
         context.Response.StatusCode = StatusCodes.Status409Conflict;
         context.Response.ContentType = "application/json";
@@ -79,6 +83,23 @@ public class ExceptionHandlingMiddleware
             {
                 code = "DUPLICATE_PHONE",
                 message = "Phone number already exists for this tenant"
+            }
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(error, JsonOptions));
+    }
+
+    private static async Task HandleDuplicateBookingException(HttpContext context)
+    {
+        context.Response.StatusCode = StatusCodes.Status409Conflict;
+        context.Response.ContentType = "application/json";
+
+        var error = new
+        {
+            error = new
+            {
+                code = "DUPLICATE_BOOKING",
+                message = "An appointment already exists for this patient at the same branch and time"
             }
         };
 
