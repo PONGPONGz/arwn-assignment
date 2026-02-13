@@ -65,11 +65,13 @@ services:
       args:
         NEXT_PUBLIC_API_URL: http://localhost:5000
         NEXT_PUBLIC_TENANT_ID: ${NEXT_PUBLIC_TENANT_ID}
+        NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN}
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:5000
       NEXT_PUBLIC_TENANT_ID: ${NEXT_PUBLIC_TENANT_ID}
+      NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN}
     depends_on:
       - backend
 

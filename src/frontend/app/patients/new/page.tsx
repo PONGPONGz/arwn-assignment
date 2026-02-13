@@ -10,7 +10,7 @@ export default function NewPatientPage() {
   const router = useRouter();
   const [branches, setBranches] = useState<BranchResponse[]>([]);
   const [form, setForm] = useState<CreatePatientRequest>({
-    tenantId: "",
+    tenantId: process.env.NEXT_PUBLIC_TENANT_ID || "a0000000-0000-0000-0000-000000000001",
     firstName: "",
     lastName: "",
     phoneNumber: "",

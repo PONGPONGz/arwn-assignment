@@ -128,11 +128,8 @@ await using (var scope = app.Services.CreateAsyncScope())
         await db.Database.EnsureCreatedAsync();
     }
 
-    if (args.Contains("--seed"))
-    {
-        await SeedDataRunner.RunAsync(db);
-        return;
-    }
+    // Auto-seed on first run (idempotent — skips if data exists)
+    await SeedDataRunner.RunAsync(db);
 }
 
 app.Run();

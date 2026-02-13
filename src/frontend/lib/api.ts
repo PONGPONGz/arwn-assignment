@@ -1,5 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "a0000000-0000-0000-0000-000000000001";
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || "admin-token-00000001";
 
 interface ApiError {
   error: {
@@ -28,12 +29,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers: {
       "Content-Type": "application/json",
       "X-Tenant-Id": TENANT_ID,
+      "Authorization": `Bearer ${API_TOKEN}`,
       ...options.headers,
     },
   });
 
   if (!res.ok) {
-    const body = await res.json() as ApiError;
+    let body: ApiError;
+    try {
+      body = await res.json() as ApiError;
+    } catch {
+      body = { error: { code: "HTTP_ERROR", message: `Request failed with status ${res.status}` } };
+    }
     throw new ApiRequestError(res.status, body);
   }
 
