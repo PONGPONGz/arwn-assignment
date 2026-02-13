@@ -54,6 +54,10 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             // Register spy event publisher for tests
             services.AddSingleton<SpyEventPublisher>();
             services.AddSingleton<IEventPublisher>(sp => sp.GetRequiredService<SpyEventPublisher>());
+
+            // Register spy cache service for tests
+            services.AddSingleton<SpyCacheService>();
+            services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<SpyCacheService>());
         });
 
         builder.UseEnvironment("Development");

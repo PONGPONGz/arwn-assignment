@@ -1,11 +1,12 @@
 using ClinicPos.Api.Auth;
 using ClinicPos.Api.Data;
-using ClinicPos.Api.Entities;
 using ClinicPos.Api.Middleware;
 using ClinicPos.Api.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
+using Role = ClinicPos.Api.Entities.Role;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,19 @@ builder.Services.AddDbContext<ClinicPosDbContext>(options =>
 
 // FluentValidation — auto-register all validators in this assembly
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// Redis
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrEmpty(redisConnectionString))
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(
+        ConnectionMultiplexer.Connect(redisConnectionString));
+    builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+}
+else
+{
+    builder.Services.AddSingleton<ICacheService, NoOpCacheService>();
+}
 
 // Patient service
 builder.Services.AddScoped<IPatientService, PatientService>();

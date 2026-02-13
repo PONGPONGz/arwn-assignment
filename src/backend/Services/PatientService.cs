@@ -11,13 +11,21 @@ public class PatientService : IPatientService
 {
     private readonly ClinicPosDbContext _db;
     private readonly IValidator<CreatePatientRequest> _validator;
+    private readonly ICacheService _cacheService;
+    private readonly ITenantProvider _tenantProvider;
+
+    private const int CacheTtlSeconds = 300;
 
     public PatientService(
         ClinicPosDbContext db,
-        IValidator<CreatePatientRequest> validator)
+        IValidator<CreatePatientRequest> validator,
+        ICacheService cacheService,
+        ITenantProvider tenantProvider)
     {
         _db = db;
         _validator = validator;
+        _cacheService = cacheService;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task<PatientResponse> CreateAsync(CreatePatientRequest request)
@@ -61,7 +69,7 @@ public class PatientService : IPatientService
                 .FirstOrDefaultAsync();
         }
 
-        return new PatientResponse
+        var response = new PatientResponse
         {
             Id = patient.Id,
             TenantId = patient.TenantId,
@@ -72,10 +80,21 @@ public class PatientService : IPatientService
             PrimaryBranchName = branchName,
             CreatedAt = patient.CreatedAt
         };
+
+        await _cacheService.InvalidateByPrefixAsync($"tenant:{request.TenantId}:patients:");
+
+        return response;
     }
 
     public async Task<List<PatientResponse>> ListAsync(Guid? branchId)
     {
+        var tenantId = _tenantProvider.TenantId;
+        var cacheKey = $"tenant:{tenantId}:patients:list:{branchId?.ToString() ?? "all"}";
+
+        var cached = await _cacheService.GetAsync<List<PatientResponse>>(cacheKey);
+        if (cached is not null)
+            return cached;
+
         var query = _db.Patients
             .Include(p => p.PrimaryBranch)
             .AsQueryable();
@@ -85,7 +104,7 @@ public class PatientService : IPatientService
             query = query.Where(p => p.PrimaryBranchId == branchId.Value);
         }
 
-        return await query
+        var result = await query
             .OrderByDescending(p => p.CreatedAt)
             .Select(p => new PatientResponse
             {
@@ -99,5 +118,9 @@ public class PatientService : IPatientService
                 CreatedAt = p.CreatedAt
             })
             .ToListAsync();
+
+        await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromSeconds(CacheTtlSeconds));
+
+        return result;
     }
 }

@@ -243,3 +243,37 @@ This document records the exact prompts used during the development of the Clini
 - Tests: Mock `ICacheService` — no Redis dependency in unit tests
 
 **Plan created:** `plans/004-caching-data-access.md`
+
+---
+
+## Iteration 10 — Caching & Data Access Implementation (Section D)
+
+**Date:** 2026-02-13
+
+**Prompt:**
+
+> Plan is ready for implementation, proceed with #file:004-caching-data-access.md
+
+**Work performed:**
+- Added `StackExchange.Redis` v2.11.0 NuGet package
+- Created `ICacheService` interface (`GetAsync<T>`, `SetAsync<T>`, `InvalidateByPrefixAsync`)
+- Created `RedisCacheService` implementation using `IConnectionMultiplexer` with graceful degradation on Redis failure
+- Created `NoOpCacheService` fallback for when Redis is not configured (e.g., tests)
+- Wired Redis `IConnectionMultiplexer` and `ICacheService` in `Program.cs` via `ConnectionStrings:Redis`
+- Updated `appsettings.json` with `ConnectionStrings:Redis` = `localhost:6379`
+- Updated `docker-compose.yml` with `ConnectionStrings__Redis: "redis:6379"` for backend service
+- Updated `PatientService.ListAsync` with cache-aside pattern (cache key: `tenant:{tenantId}:patients:list:{branchId|all}`, TTL: 300s)
+- Updated `PatientService.CreateAsync` to invalidate `tenant:{tenantId}:patients:*` after successful create
+- Updated `AppointmentService.CreateAsync` to invalidate `tenant:{tenantId}:patients:*` after successful create
+- Created `SpyCacheService` test double (in-memory store with prefix invalidation)
+- Registered `SpyCacheService` in `TestWebApplicationFactory`
+- Created 5 BDD-style cache tests in `Patients/CacheTests.cs`:
+  1. Cache miss → populates cache
+  2. Cache hit → returns cached data
+  3. Create Patient → invalidates patient cache
+  4. Create Appointment → invalidates patient cache
+  5. Tenant cache isolation → Tenant A invalidation doesn't affect Tenant B
+- All 24 tests passing (19 existing + 5 new)
+- Resolved `Role` ambiguity between `ClinicPos.Api.Entities.Role` and `StackExchange.Redis.Role` via using alias
+
+**Result:** Plan 004 marked as Done. All deliverables and tests complete.

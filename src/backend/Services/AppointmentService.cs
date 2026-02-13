@@ -13,17 +13,20 @@ public class AppointmentService : IAppointmentService
     private readonly IValidator<CreateAppointmentRequest> _validator;
     private readonly ITenantProvider _tenantProvider;
     private readonly IEventPublisher _eventPublisher;
+    private readonly ICacheService _cacheService;
 
     public AppointmentService(
         ClinicPosDbContext db,
         IValidator<CreateAppointmentRequest> validator,
         ITenantProvider tenantProvider,
-        IEventPublisher eventPublisher)
+        IEventPublisher eventPublisher,
+        ICacheService cacheService)
     {
         _db = db;
         _validator = validator;
         _tenantProvider = tenantProvider;
         _eventPublisher = eventPublisher;
+        _cacheService = cacheService;
     }
 
     public async Task<AppointmentResponse> CreateAsync(CreateAppointmentRequest request)
@@ -67,6 +70,8 @@ public class AppointmentService : IAppointmentService
             appointment.StartAt,
             appointment.CreatedAt
         });
+
+        await _cacheService.InvalidateByPrefixAsync($"tenant:{tenantId}:patients:");
 
         return new AppointmentResponse
         {
